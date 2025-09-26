@@ -1,0 +1,20 @@
+{
+  "version": "0.2.1",
+  "defaults": {},
+  "configurations": [
+    {
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "projectTarget": "raytrace.exe",
+      "name": "Raytracer: Render all Scenes",
+      "args": [ "0" ]
+    },
+    {
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "projectTarget": "raytrace.exe",
+      "name": "Raytracer: Render one scene",
+      "args": [ "../../../scenes/spheres/spheres.sce", "../../../results/spheres.bmp" ]
+    }
+  ]
+}

@@ -1,0 +1,2 @@
+#pragma once
+#define SCENES_PATH "@SCENES_PATH_NATIVE@"
