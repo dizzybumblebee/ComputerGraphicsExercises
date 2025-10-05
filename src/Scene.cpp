@@ -89,15 +89,21 @@ vec3 Scene::trace(const Ray& _ray, int _depth)
     // compute local Phong lighting (ambient+diffuse+specular)
     vec3 color = lighting(point, normal, -_ray.direction, object->material);
 
-    /** \todo
-     * Compute reflections by recursive ray tracing:
-     * - check whether `object` is reflective by checking its `material.mirror`
-     * - check recursion depth
-     * - generate reflected ray, compute its color contribution, and mix it with
-     * the color computed by local Phong lighting (use `object->material.mirror` as weight)
-     * - check whether your recursive algorithm reflects the ray `max_depth` times
-     */
+    //checking if object is reflective
+    if(object->material.mirror > 0 && _depth <= max_depth) {
 
+        vec3 reflected, reflected_color;
+
+        //direction of a reflected ray
+        reflected = normalize(reflect(_ray.direction, normal));
+
+        Ray reflectedRay((point + 1e-6 * normal), reflected);
+
+        //local Phong lighting
+        reflected_color = trace(reflectedRay, _depth+1);
+        color = (1 - object->material.mirror)*color + object->material.mirror*reflected_color;
+
+    }
 
     return color;
 }
@@ -179,6 +185,7 @@ vec3 Scene::lighting(const vec3& _point, const vec3& _normal, const vec3& _view,
 
             color += (diffuse+specular) * light.color;
         }
+
     }
 
     return color;
