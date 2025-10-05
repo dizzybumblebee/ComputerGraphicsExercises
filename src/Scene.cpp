@@ -20,6 +20,7 @@
 #include <map>
 #include <functional>
 #include <stdexcept>
+#include <cmath>
 
 #if HAVE_OPENMP
 #  include <omp.h>
@@ -88,6 +89,14 @@ vec3 Scene::trace(const Ray& _ray, int _depth)
     // compute local Phong lighting (ambient+diffuse+specular)
     vec3 color = lighting(point, normal, -_ray.direction, object->material);
 
+    /** \todo
+     * Compute reflections by recursive ray tracing:
+     * - check whether `object` is reflective by checking its `material.mirror`
+     * - check recursion depth
+     * - generate reflected ray, compute its color contribution, and mix it with
+     * the color computed by local Phong lighting (use `object->material.mirror` as weight)
+     * - check whether your recursive algorithm reflects the ray `max_depth` times
+     */
 
 
     return color;
@@ -121,8 +130,56 @@ bool Scene::intersect(const Ray& _ray, Object_ptr& _object, vec3& _point, vec3& 
 vec3 Scene::lighting(const vec3& _point, const vec3& _normal, const vec3& _view, const Material& _material)
 {
 
-    // visualize the normal as a RGB color for now.
-    vec3 color = (_normal + vec3(1)) / 2.0;
+    vec3 color = ambience*_material.ambient;
+
+    /* for every light source:
+     * - first, check whether reflection point is shadowed
+     *     -> is source's light ray blocked between origin and reflection point?
+     * - if NOT shadowed, calculate diffuse and specular
+     * -
+      */
+    for (Light& light: lights) {
+        vec3 diffuse = vec3(0);
+        vec3 specular = vec3(0);
+
+        vec3 shadowOrigin = _point + (1e-6 * _normal); //slightly displace origin to avoid float rounding errors
+        Ray shadowRay(shadowOrigin,(light.position - _point));
+
+        //dummy objects for intersect function
+        Object_ptr shadowObject;
+        vec3 shadowPoint, shadowNormal;
+        double shadowT;
+
+        bool isShadowed = false;
+
+        //if shadowRay intersects with an object
+        if(intersect(shadowRay,shadowObject,shadowPoint,shadowNormal,shadowT)) {
+            //if intersected object is closer than light source
+            if (norm(light.position - shadowPoint) < norm(light.position - _point)) {
+                isShadowed = true;
+            }
+        }
+
+        if(!isShadowed) {
+            vec3 l = normalize(light.position - _point);
+            vec3 v = normalize(_view);
+            vec3 r = mirror(l,_normal);
+
+            double theta = dot(_normal,l);
+            double alpha = dot(r,v);
+
+            if (theta > 0) {
+                diffuse = _material.diffuse * theta;
+
+                if (alpha > 0) {
+                    specular = (_material.specular * pow(alpha,_material.shininess));
+                }
+            }
+
+
+            color += (diffuse+specular) * light.color;
+        }
+    }
 
     return color;
 }

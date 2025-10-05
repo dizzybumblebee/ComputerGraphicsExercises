@@ -18,6 +18,7 @@
 
 #include <memory>
 #include <filesystem>
+#include <cmath>
 
 //== CLASS DEFINITION =========================================================
 

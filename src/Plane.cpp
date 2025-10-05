@@ -40,12 +40,12 @@ intersect(const Ray& _ray,
         const vec3   oc = _ray.origin - center;
 
         //compute the intersection of the plane with `_ray`
-        double denom = dot(_intersection_normal, dir);
+        double denom = dot(normal, dir);
 
         //check if ray is parallel to plane
         if (fabs(denom) < 0.000000001) return false;
 
-        double t = -dot(_intersection_normal,oc) / denom;
+        double t = -dot(normal,oc) / denom;
 
         //check if ray intersects plane behind origin
         if (t <= 0) return false;
