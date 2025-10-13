@@ -17,6 +17,7 @@
 #include <limits>
 #include <cmath>
 #include <filesystem>
+#include "vec3.h"
 
 
 //== IMPLEMENTATION ===========================================================
@@ -131,20 +132,47 @@ void angleWeights(const vec3 &p0, const vec3 &p1, const vec3 &p2,
 
 void Mesh::compute_normals()
 {
-    // compute triangle normals
-    for (Triangle& t: triangles_)
-    {
-        const vec3& p0 = vertices_[t.i0].position;
-        const vec3& p1 = vertices_[t.i1].position;
-        const vec3& p2 = vertices_[t.i2].position;
-        t.normal = normalize(cross(p1-p0, p2-p0));
-    }
+
+    /** \todo
+     * In some scenes (e.g the office scene) some objects should be flat
+     * shaded (e.g. the desk) while other objects should be Phong shaded to appear
+     * realistic (e.g. chairs). You have to implement the following:
+     * - Compute vertex normals by averaging the normals of their incident triangles.
+     * - Store the vertex normals in the Vertex::normal member variable.
+     * - Weigh the normals by their triangles' angles.
+     */
 
     // initialize vertex normals to zero
     for (Vertex& v: vertices_)
     {
         v.normal = vec3(0,0,0);
     }
+
+    // compute triangle normals and weights, compute vertices normals
+    for (Triangle& t: triangles_)
+    {
+        const vec3& p0 = vertices_[t.i0].position;
+        const vec3& p1 = vertices_[t.i1].position;
+        const vec3& p2 = vertices_[t.i2].position;
+        t.normal = normalize(cross(p1-p0, p2-p0));
+
+        std::array<double, 3> weights;
+        angleWeights(p0, p1, p2, weights[0], weights[1], weights[2]);
+
+        vertices_[t.i0].normal += t.normal*weights[0];
+        vertices_[t.i1].normal += t.normal*weights[1];
+        vertices_[t.i2].normal += t.normal*weights[2];
+
+    }
+
+    // normalize normals
+    for (Vertex& v: vertices_)
+    {
+        v.normal = normalize(v.normal);
+    }
+
+
+
 
 }
 
@@ -171,7 +199,45 @@ void Mesh::compute_bounding_box()
 bool Mesh::intersect_bounding_box(const Ray& _ray) const
 {
 
+    /** \todo
+    * Intersect the ray `_ray` with the axis-aligned bounding box of the mesh.
+    * Note that the minimum and maximum point of the bounding box are stored
+    * in the member variables `bb_min_` and `bb_max_`. Return whether the ray
+    * intersects the bounding box.
+    * This function is ued in `Mesh::intersect()` to avoid the intersection test
+    * with all triangles of every mesh in the scene. The bounding boxes are computed
+    * in `Mesh::compute_bounding_box()`.
+    */
 
+    double t_min = -std::numeric_limits<double>::infinity();
+    double t_max = std::numeric_limits<double>::infinity();
+
+    for (int i = 0; i < 3; i++)
+    {
+        // we need to handle the ray parallel to slab (direction is close to zero)
+        if(std::abs(_ray.direction[i])  < 1e-6) {
+
+            if(_ray.origin[i] < bb_min_[i] || _ray.origin[i] > bb_max_[i]) return false;
+
+        }
+        double t1, t2;
+
+        t1 = (bb_min_[i] - _ray.origin[i]) / _ray.direction[i];
+        t2 = (bb_max_[i] - _ray.origin[i]) / _ray.direction[i];
+
+        if (t1 > t2) std::swap(t1, t2);
+
+        t_min = std::min(t1, t_min);
+        t_max = std::max(t2, t_max);
+
+        //no intersection
+        if (t_min > t_max) return false;
+
+        //intersection is behind ray origin
+        if (t_max < 0) return false;
+
+
+    }
     return true;
 }
 
@@ -220,17 +286,30 @@ bool Mesh::intersect(const Ray& _ray,
 
 
 bool
-Mesh::
-intersect_triangle(const Triangle&  _triangle,
-                   const Ray&       _ray,
-                   vec3&            _intersection_point,
-                   vec3&            _intersection_normal,
-                   double&          _intersection_t) const
+    Mesh::
+    intersect_triangle(const Triangle&  _triangle,
+                       const Ray&       _ray,
+                       vec3&            _intersection_point,
+                       vec3&            _intersection_normal,
+                       double&          _intersection_t) const
 {
     const vec3& p0 = vertices_[_triangle.i0].position;
     const vec3& p1 = vertices_[_triangle.i1].position;
     const vec3& p2 = vertices_[_triangle.i2].position;
 
+    /** \todo
+    * - intersect _ray with _triangle
+    * - store intersection point in `_intersection_point`
+    * - store ray parameter in `_intersection_t`
+    * - store normal at intersection point in `_intersection_normal`.
+    * - Depending on the member variable `draw_mode_`, use either the triangle
+    *  normal (`Triangle::normal`) or interpolate the vertex normals (`Vertex::normal`).
+    * - return `true` if there is an intersection with t > 0 (in front of the viewer)
+    *
+    * Hint: Rearrange `ray.origin + t*ray.dir = a*p0 + b*p1 + (1-a-b)*p2` to obtain a solvable
+    * system for a, b and t.
+    * Refer to [Cramer's Rule](https://en.wikipedia.org/wiki/Cramer%27s_rule) to easily solve it.
+     */
 
     return false;
 }
