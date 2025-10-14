@@ -90,6 +90,11 @@ public:
                             vec3&            _intersection_point,
                             vec3&            _intersection_normal,
                             double&          _intersection_t) const;
+    
+    ///Compute determinant of a given 3x3 matrix (in vector form)
+    double determinant(vec3 v1,
+                       vec3 v2,
+                       vec3 v3) const;
 
 private:
     /// Does this mesh use flat or Phong shading?

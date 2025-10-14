@@ -149,7 +149,8 @@ vec3 Scene::lighting(const vec3& _point, const vec3& _normal, const vec3& _view,
         vec3 specular = vec3(0);
 
         vec3 shadowOrigin = _point + (1e-6 * _normal); //slightly displace origin to avoid float rounding errors
-        Ray shadowRay(shadowOrigin,(light.position - _point));
+        vec3 shadowDir = normalize(light.position - _point);
+        Ray shadowRay(shadowOrigin,shadowDir);
 
         //dummy objects for intersect function
         Object_ptr shadowObject;
@@ -161,7 +162,7 @@ vec3 Scene::lighting(const vec3& _point, const vec3& _normal, const vec3& _view,
         //if shadowRay intersects with an object
         if(intersect(shadowRay,shadowObject,shadowPoint,shadowNormal,shadowT)) {
             //if intersected object is closer than light source
-            if (norm(light.position - shadowPoint) < norm(light.position - _point)) {
+            if (norm(light.position - shadowPoint) > shadowT) {
                 isShadowed = true;
             }
         }
@@ -183,7 +184,7 @@ vec3 Scene::lighting(const vec3& _point, const vec3& _normal, const vec3& _view,
             }
 
 
-            color += (diffuse+specular) * light.color;
+            color += (diffuse + specular) * light.color;
         }
 
     }

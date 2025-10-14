@@ -17,6 +17,7 @@
 #include <limits>
 #include <cmath>
 #include <filesystem>
+#include <array>
 #include "vec3.h"
 
 
@@ -297,22 +298,57 @@ bool
     const vec3& p1 = vertices_[_triangle.i1].position;
     const vec3& p2 = vertices_[_triangle.i2].position;
 
-    /** \todo
-    * - intersect _ray with _triangle
-    * - store intersection point in `_intersection_point`
-    * - store ray parameter in `_intersection_t`
-    * - store normal at intersection point in `_intersection_normal`.
-    * - Depending on the member variable `draw_mode_`, use either the triangle
-    *  normal (`Triangle::normal`) or interpolate the vertex normals (`Vertex::normal`).
-    * - return `true` if there is an intersection with t > 0 (in front of the viewer)
-    *
-    * Hint: Rearrange `ray.origin + t*ray.dir = a*p0 + b*p1 + (1-a-b)*p2` to obtain a solvable
-    * system for a, b and t.
-    * Refer to [Cramer's Rule](https://en.wikipedia.org/wiki/Cramer%27s_rule) to easily solve it.
-     */
+    vec3 columnVector = (p0 - _ray.origin);
 
-    return false;
+    //calculate determinants
+    double detA = determinant(_ray.direction,(p0 - p1),(p0 - p2));
+    double detT = determinant(columnVector,(p0 - p1),(p0 - p2));
+    double detBeta = determinant(_ray.direction,columnVector,(p0 - p2));
+    double detGamma = determinant(_ray.direction,(p0 - p1),columnVector);
+
+    //get solutions via cramer's rule
+    double t = detT / detA;
+    double beta = detBeta / detA;
+    double gamma = detGamma / detA;
+
+    //no need for further computation if any of the following apply
+    if (t <= 0 || beta < 0 || gamma < 0 || beta + gamma > 1) {
+        return false;
+    }
+
+    _intersection_t = t;
+    _intersection_point = t * _ray.direction + _ray.origin;
+
+    if (draw_mode_ == FLAT) {
+        _intersection_normal = _triangle.normal;
+    }
+    else if (draw_mode_ == PHONG) { //interpolate vertex normals
+        double alpha = 1 - beta - gamma;
+        const Vertex& v0 = vertices_[_triangle.i0];
+        const Vertex& v1 = vertices_[_triangle.i1];
+        const Vertex& v2 = vertices_[_triangle.i2];
+
+        _intersection_normal = normalize(alpha*v0.normal + beta*v1.normal + gamma*v2.normal);
+    }
+
+    return true;
 }
 
+double
+    Mesh::
+    determinant(vec3 v1, vec3 v2, vec3 v3) const {
+
+    double posProdSum[3] = {(v1[0]*v2[1]*v3[2]),(v2[0]*v3[1]*v1[2]),(v3[0]*v1[1]*v2[2])};
+    double negProdSum[3] = {(v3[0]*v2[1]*v1[2]),(v2[0]*v1[1]*v3[2]),(v1[0]*v3[1]*v2[2])};
+
+    double sum1 = 0;
+    double sum2 = 0;
+
+    for (int i = 0; i < 3; i++) {
+        sum1 += posProdSum[i];
+        sum2 += negProdSum[i];
+    }
+    return (sum1 - sum2);
+}
 
 //=============================================================================
