@@ -228,8 +228,8 @@ bool Mesh::intersect_bounding_box(const Ray& _ray) const
 
         if (t1 > t2) std::swap(t1, t2);
 
-        t_min = std::min(t1, t_min);
-        t_max = std::max(t2, t_max);
+        t_min = std::max(t1, t_min);
+        t_max = std::min(t2, t_max);
 
         //no intersection
         if (t_min > t_max) return false;
