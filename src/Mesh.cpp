@@ -341,13 +341,9 @@ double
     double posProdSum[3] = {(v1[0]*v2[1]*v3[2]),(v2[0]*v3[1]*v1[2]),(v3[0]*v1[1]*v2[2])};
     double negProdSum[3] = {(v3[0]*v2[1]*v1[2]),(v2[0]*v1[1]*v3[2]),(v1[0]*v3[1]*v2[2])};
 
-    double sum1 = 0;
-    double sum2 = 0;
+    double sum1 = posProdSum[0] + posProdSum[1] + posProdSum[2];
+    double sum2 = negProdSum[0] + negProdSum[1] + negProdSum[2];
 
-    for (int i = 0; i < 3; i++) {
-        sum1 += posProdSum[i];
-        sum2 += negProdSum[i];
-    }
     return (sum1 - sum2);
 }
 
